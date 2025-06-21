@@ -70,6 +70,11 @@ def sync_file(path: str) -> str:
 
 def sync_all(files: List[str]) -> Dict[str, str]:
     results = {}
+    sync_folder = get_sync_folder()
+    if not sync_folder:
+        for f in files:
+            results[f] = 'NoSync'
+        return results
     for f in files:
         results[f] = sync_file(f)
     return results

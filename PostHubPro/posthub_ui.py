@@ -34,6 +34,8 @@ class CommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs.addSeparatorCommandInput('sep1')
             inputs.addBoolValueInput('backupNow', 'Backup Now', False, '', False)
             inputs.addBoolValueInput('syncNow', 'Sync Now', False, '', False)
+            inputs.addBoolValueInput('setSync', 'Set Sync Folder', False, '', False)
+            inputs.addBoolValueInput('restoreLatest', 'Restore Latest', False, '', False)
             inputs.addBoolValueInput('saveTags', 'Save Tags', False, '', False)
             inputs.addBoolValueInput('exportZip', 'Export ZIP', False, '', False)
             inputs.addBoolValueInput('importZip', 'Import ZIP', False, '', False)
@@ -55,6 +57,20 @@ class CommandExecuteHandler(adsk.core.CommandEventHandler):
                 res = sync_manager.sync_all(files)
                 msg = '\n'.join([f"{os.path.basename(k)}: {v}" for k, v in res.items()])
                 ui.messageBox('Sync complete:\n' + msg)
+            if inputs.itemById('setSync').value:
+                dlg = ui.createFolderDialog()
+                dlg.title = 'Select Sync Folder'
+                if dlg.showDialog() == adsk.core.DialogResults.DialogOK:
+                    sync_manager.set_sync_folder(dlg.folder)
+                    ui.messageBox('Sync folder set')
+            if inputs.itemById('restoreLatest').value:
+                dlg = ui.createFileDialog()
+                dlg.filter = 'CPS (*.cps)'
+                if dlg.showOpen() == adsk.core.DialogResults.DialogOK:
+                    if versioning.restore_latest(dlg.filename):
+                        ui.messageBox('File restored')
+                    else:
+                        ui.messageBox('No backup found')
             if inputs.itemById('saveTags').value:
                 files = file_manager.list_cps_files()
                 for i, meta in enumerate(files):
