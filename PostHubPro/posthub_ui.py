@@ -1,5 +1,6 @@
 import adsk.core
 import traceback
+import os
 from datetime import datetime
 
 from . import file_manager, tag_manager, versioning, export_import, sync_manager
@@ -23,7 +24,8 @@ class CommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 mod_in = inputs.addStringValueInput(f'mod_{i}', '', mod)
                 tags = ', '.join(tag_manager.get_tags_for_file(meta['path']))
                 tag_in = inputs.addStringValueInput(f'tag_{i}', '', tags)
-                status_in = inputs.addStringValueInput(f'status_{i}', '', 'Unknown')
+                status = sync_manager.file_status(meta['path'])
+                status_in = inputs.addStringValueInput(f'status_{i}', '', status)
                 self.table.addCommandInput(name_in, row, 0)
                 self.table.addCommandInput(mod_in, row, 1)
                 self.table.addCommandInput(tag_in, row, 2)
@@ -32,6 +34,7 @@ class CommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs.addSeparatorCommandInput('sep1')
             inputs.addBoolValueInput('backupNow', 'Backup Now', False, '', False)
             inputs.addBoolValueInput('syncNow', 'Sync Now', False, '', False)
+            inputs.addBoolValueInput('saveTags', 'Save Tags', False, '', False)
             inputs.addBoolValueInput('exportZip', 'Export ZIP', False, '', False)
             inputs.addBoolValueInput('importZip', 'Import ZIP', False, '', False)
         except:
@@ -50,7 +53,16 @@ class CommandExecuteHandler(adsk.core.CommandEventHandler):
             if inputs.itemById('syncNow').value:
                 files = [f['path'] for f in file_manager.list_cps_files()]
                 res = sync_manager.sync_all(files)
-                ui.messageBox('Sync complete')
+                msg = '\n'.join([f"{os.path.basename(k)}: {v}" for k, v in res.items()])
+                ui.messageBox('Sync complete:\n' + msg)
+            if inputs.itemById('saveTags').value:
+                files = file_manager.list_cps_files()
+                for i, meta in enumerate(files):
+                    inp = inputs.itemById(f'tag_{i}')
+                    if inp:
+                        tags = [t.strip() for t in inp.value.split(',') if t.strip()]
+                        tag_manager.update_tags_for_file(meta['path'], tags)
+                ui.messageBox('Tags saved')
             if inputs.itemById('exportZip').value:
                 dlg = ui.createFileDialog()
                 dlg.isMultiSelectEnabled = False

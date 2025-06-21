@@ -31,6 +31,24 @@ def set_sync_folder(path: str) -> None:
     save_config(cfg)
 
 
+def file_status(path: str) -> str:
+    sync_folder = get_sync_folder()
+    if not sync_folder:
+        return 'NoSync'
+    remote = os.path.join(sync_folder, os.path.basename(path))
+    if not os.path.isfile(remote):
+        return 'Missing'
+    local_hash = file_hash(path)
+    remote_hash = file_hash(remote)
+    if local_hash == remote_hash:
+        return 'Synced'
+    if os.path.getmtime(path) > os.path.getmtime(remote):
+        return 'Modified'
+    if os.path.getmtime(remote) > os.path.getmtime(path):
+        return 'Conflict'
+    return 'Unknown'
+
+
 def sync_file(path: str) -> str:
     sync_folder = get_sync_folder()
     if not sync_folder:
