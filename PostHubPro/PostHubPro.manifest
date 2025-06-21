@@ -1,0 +1,6 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "python",
+    "entry": "PostHubPro.py",
+    "runOnStartup": false
+}
